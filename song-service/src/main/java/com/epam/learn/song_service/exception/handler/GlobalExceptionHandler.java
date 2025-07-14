@@ -1,8 +1,12 @@
 package com.epam.learn.song_service.exception.handler;
 
+import com.epam.learn.song_service.exception.ConflictException;
+import com.epam.learn.song_service.exception.NotFoundException;
 import com.epam.learn.song_service.model.ErrorResponse;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -27,8 +31,8 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
-        return ResponseEntity.badRequest().body(
-                ErrorResponse.builder()
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.builder()
                         .errorMessage("Validation error")
                         .details(errors)
                         .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
@@ -38,18 +42,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
-        Map<String, String> errors = new HashMap<>();
+        String errorMessage = ex.getConstraintViolations()
+                .stream()
+                .findFirst()
+                .map(ConstraintViolation::getMessage)
+                .orElse("Validation failed");
 
-        ex.getConstraintViolations().forEach(violation -> {
-            String fieldName = violation.getPropertyPath().toString();
-            String errorMessage = violation.getMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        return ResponseEntity.badRequest().body(
-                ErrorResponse.builder()
-                        .errorMessage("Validation error")
-                        .details(errors)
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.builder()
+                        .errorMessage(errorMessage)
                         .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                         .build()
         );
@@ -63,8 +64,8 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("unknown");
 
-        return ResponseEntity.badRequest().body(
-                ErrorResponse.builder()
+        return ResponseEntity.badRequest()
+                .body(ErrorResponse.builder()
                         .errorMessage("Validation error")
                         .details(Map.of(fieldName, ex.getOriginalMessage()))
                         .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
@@ -72,13 +73,44 @@ public class GlobalExceptionHandler {
         );
     }
 
+    @ExceptionHandler(NotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequestException(NotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.builder()
+                        .errorCode(String.valueOf(HttpStatus.NOT_FOUND.value()))
+                        .errorMessage(ex.getMessage())
+                        .build()
+                );
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.builder()
+                        .errorMessage(ex.getMessage())
+                        .errorCode(ex.getErrorCode())
+                        .build()
+                );
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConflict() {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.builder()
+                        .errorMessage("Resource already exists")
+                        .errorCode(String.valueOf(HttpStatus.CONFLICT.value()))
+                        .build()
+                );
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleExceptions() {
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .errorCode(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()))
-                .errorMessage(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
-                .build();
-
-        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        return ResponseEntity.internalServerError()
+                .body(ErrorResponse.builder()
+                        .errorMessage(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                        .errorCode(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()))
+                        .build()
+                );
     }
 }

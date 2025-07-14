@@ -12,7 +12,11 @@ import java.time.Duration;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "metadata")
+@Table(name = "metadata",
+        uniqueConstraints = {
+            @UniqueConstraint(columnNames = "resource_id")
+        }
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,7 +27,7 @@ public class SongEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "resource_id", nullable = false)
+    @Column(name = "resource_id", nullable = false, unique = true)
     private Long resourceId;
 
     @Column(nullable = false)
