@@ -18,7 +18,7 @@ import org.springframework.validation.annotation.Validated;
         "id", "name", "artist", "album", "duration", "year"
 })
 @Validated
-public class SongRequest {
+public class SongMetadataRequest {
     @NotNull(message = "ID is required") @Min(value = 1, message = "ID must be greater than or equal to {value}")
     Long id;
 

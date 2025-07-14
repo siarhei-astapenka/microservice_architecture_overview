@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
+    private final MetadataService metadataService;
 
     public Map<String, Long> uploadResource(byte[] file) {
         ResourceEntity entity = ResourceEntity.builder()
@@ -24,6 +25,8 @@ public class ResourceService {
                 .build();
 
         entity = resourceRepository.save(entity);
+
+        metadataService.parceAndSaveMetadata(file, entity.getId());
 
         Map<String, Long> response = new HashMap<>();
         response.put("id", entity.getId());
@@ -57,6 +60,7 @@ public class ResourceService {
         List<Long> existingIds = resourceRepository.findExistingIds(idsToDelete);
 
         resourceRepository.deleteAllById(existingIds);
+        metadataService.deleteMetadata(ids);
 
         response.put("ids", existingIds);
 

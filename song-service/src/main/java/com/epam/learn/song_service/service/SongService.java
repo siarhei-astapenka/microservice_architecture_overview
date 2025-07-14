@@ -3,8 +3,8 @@ package com.epam.learn.song_service.service;
 import com.epam.learn.song_service.entity.SongEntity;
 import com.epam.learn.song_service.exception.ConflictException;
 import com.epam.learn.song_service.exception.NotFoundException;
-import com.epam.learn.song_service.model.SongRequest;
-import com.epam.learn.song_service.model.SongResponse;
+import com.epam.learn.song_service.model.SongMetadataRequest;
+import com.epam.learn.song_service.model.SongMetadataResponse;
 import com.epam.learn.song_service.repository.SongRepository;
 import com.epam.learn.song_service.service.mapper.SongMapper;
 import lombok.AllArgsConstructor;
@@ -26,8 +26,8 @@ public class SongService {
     private final SongRepository songRepository;
 
     @Transactional
-    public SongResponse saveSongMetadata(SongRequest songRequest) {
-        SongEntity songEntity = songMapper.toEntity(songRequest);
+    public SongMetadataResponse saveSongMetadata(SongMetadataRequest songMetadataRequest) {
+        SongEntity songEntity = songMapper.toEntity(songMetadataRequest);
 
         songRepository.findByResourceId(songEntity.getResourceId())
                 .ifPresent(existing -> {
@@ -37,12 +37,12 @@ public class SongService {
                     );
                 });
 
-        return SongResponse.builder()
+        return SongMetadataResponse.builder()
                 .id(songRepository.save(songEntity).getId())
                 .build();
     }
 
-    public SongResponse getSongMetadataByResourceId(Long resourceId) {
+    public SongMetadataResponse getSongMetadataByResourceId(Long resourceId) {
         return songMapper.toResponse(
                 songRepository.findByResourceId(resourceId)
                         .orElseThrow(() -> new NotFoundException(String.format("Resource with ID=%s not found", resourceId))));

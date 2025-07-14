@@ -1,7 +1,7 @@
 package com.epam.learn.song_service.controller;
 
-import com.epam.learn.song_service.model.SongRequest;
-import com.epam.learn.song_service.model.SongResponse;
+import com.epam.learn.song_service.model.SongMetadataRequest;
+import com.epam.learn.song_service.model.SongMetadataResponse;
 import com.epam.learn.song_service.service.SongService;
 import com.epam.learn.song_service.validation.constraints.ValidCsvLength;
 import jakarta.validation.Valid;
@@ -32,12 +32,12 @@ public class SongServiceController {
     private final SongService songService;
 
     @PostMapping()
-    public ResponseEntity<SongResponse> postSongMetadata(@Valid @RequestBody SongRequest songRequest) {
-        return ResponseEntity.ok(songService.saveSongMetadata(songRequest));
+    public ResponseEntity<SongMetadataResponse> postSongMetadata(@Valid @RequestBody SongMetadataRequest songMetadataRequest) {
+        return ResponseEntity.ok(songService.saveSongMetadata(songMetadataRequest));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SongResponse> getSongMetadata(
+    public ResponseEntity<SongMetadataResponse> getSongMetadata(
             @PathVariable
             @Min(value = 1, message = "Invalid value for ID '${validatedValue}'. Must be a positive integer")
             @NotNull

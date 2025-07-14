@@ -1,8 +1,8 @@
 package com.epam.learn.song_service.service.mapper;
 
 import com.epam.learn.song_service.entity.SongEntity;
-import com.epam.learn.song_service.model.SongRequest;
-import com.epam.learn.song_service.model.SongResponse;
+import com.epam.learn.song_service.model.SongMetadataRequest;
+import com.epam.learn.song_service.model.SongMetadataResponse;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -11,7 +11,7 @@ import java.time.format.DateTimeFormatter;
 
 @Service
 public class SongMapper {
-    public SongEntity toEntity(SongRequest request) {
+    public SongEntity toEntity(SongMetadataRequest request) {
         return SongEntity.builder()
                 .resourceId(request.getId())
                 .name(request.getName())
@@ -22,9 +22,9 @@ public class SongMapper {
                 .build();
     }
 
-    public SongResponse toResponse(SongEntity entity) {
-        return SongResponse.builder()
-                .id(entity.getId())
+    public SongMetadataResponse toResponse(SongEntity entity) {
+        return SongMetadataResponse.builder()
+                .id(entity.getResourceId())
                 .name(entity.getName())
                 .artist(entity.getArtist())
                 .album(entity.getAlbum())

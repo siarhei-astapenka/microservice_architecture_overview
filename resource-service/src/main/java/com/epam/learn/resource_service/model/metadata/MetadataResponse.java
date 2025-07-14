@@ -1,4 +1,4 @@
-package com.epam.learn.song_service.model;
+package com.epam.learn.resource_service.model.metadata;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -13,7 +13,7 @@ import lombok.extern.jackson.Jacksonized;
 @JsonPropertyOrder({
         "id", "name", "artist", "album", "duration", "year"
 })
-public class SongResponse {
+public class MetadataResponse {
     Long id;
     String name;
     String artist;
