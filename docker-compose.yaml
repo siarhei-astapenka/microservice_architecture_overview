@@ -1,30 +1,72 @@
+version: '3.8'
+
 services:
   resource-db:
     image: postgres:17-alpine
+    env_file: .env
     environment:
-      POSTGRES_DB: resource-db
-      POSTGRES_USER: postgres  # Default, can be omitted if unchanged
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${RESOURCE_DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5432:5432"  # Maps container port 5432 to host port 5432
+      - "5432:5432"
+    volumes:
+      - ./init-scripts/resource-db:/docker-entrypoint-initdb.d
+      - resource-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${RESOURCE_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   song-db:
     image: postgres:17-alpine
+    env_file: .env
     environment:
-      POSTGRES_DB: song-db
-      POSTGRES_USER: postgres  # Default, can be omitted if unchanged
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ${SONG_DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "5433:5432"  # Maps container port 5432 to host port 5433 (to avoid conflict)
+      - "5433:5432"
+    volumes:
+      - ./init-scripts/song-db:/docker-entrypoint-initdb.d
+      - song-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${SONG_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-# Related settings for application.properties:
-#
-# For resource-service:
-# spring.datasource.url=jdbc:postgresql://localhost:5432/resource-db
-# spring.datasource.username=postgres
-# spring.datasource.password=postgres
-#
-# For song-service:
-# spring.datasource.url=jdbc:postgresql://localhost:5433/song-db
-# spring.datasource.username=postgres
-# spring.datasource.password=postgres
+  resource-service:
+    build: ./resource-service
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://resource-db:5432/${RESOURCE_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SONG_METADATA_SERVICE_URL: http://song-service:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      resource-db:
+        condition: service_healthy
+
+  song-service:
+    build: ./song-service
+    env_file: .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://song-db:5432/${SONG_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SERVER_PORT: 8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      song-db:
+        condition: service_healthy
+
+volumes:
+  resource-db-data:
+  song-db-data:
