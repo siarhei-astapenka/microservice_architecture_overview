@@ -1,6 +1,21 @@
 version: '3.8'
 
 services:
+  eureka-server:
+    build: ./eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=eureka-server
+      - EUREKA_INSTANCE_PREFERIPADDRESS=true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   resource-db:
     image: postgres:17-alpine
     env_file: .env
@@ -45,10 +60,14 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SONG_METADATA_SERVICE_URL: http://song-service:8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: resource-service
+      EUREKA_INSTANCE_PREFERIPADDRESS: true
     ports:
       - "8080:8080"
     depends_on:
+      eureka-server:
+        condition: service_healthy
       resource-db:
         condition: service_healthy
 
@@ -61,11 +80,18 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: none
       SERVER_PORT: 8080
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: song-service
+      EUREKA_INSTANCE_PREFERIPADDRESS: true
     ports:
-      - "8081:8080"
+      - "8081-8082:8080"
     depends_on:
+      eureka-server:
+        condition: service_healthy
       song-db:
         condition: service_healthy
+    deploy:
+      replicas: 2
 
 volumes:
   resource-db-data:

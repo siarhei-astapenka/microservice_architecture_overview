@@ -17,6 +17,17 @@ spring:
 server:
   port: ${SERVER_PORT:8081}
 
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
+    appname: song-service
+
 logging:
   level:
     org:

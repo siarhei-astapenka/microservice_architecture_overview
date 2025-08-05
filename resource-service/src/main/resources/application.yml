@@ -17,9 +17,24 @@ spring:
         order_updates: true
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
 
 server:
   port: 8080
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
+    appname: resource-service
 
 logging:
   level:
@@ -28,9 +43,4 @@ logging:
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE
-
-song:
-  metadata:
-    service:
-      url: ${SONG_METADATA_SERVICE_URL:http://localhost:8081} 
+              BasicBinder: TRACE 
