@@ -63,6 +63,7 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: resource-service
       EUREKA_INSTANCE_PREFERIPADDRESS: true
+      SONG_SERVICE_URL: ${SONG_METADATA_SERVICE_URL}
     ports:
       - "8080:8080"
     depends_on:

@@ -25,8 +25,10 @@ spring:
 server:
   port: 8080
 
+# Eureka configuration - can be disabled for local development
 eureka:
   client:
+    enabled: ${EUREKA_CLIENT_ENABLED:true}
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
@@ -35,6 +37,11 @@ eureka:
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
     appname: resource-service
+
+# Song service configuration for local development
+song:
+  service:
+    url: http://song-service
 
 logging:
   level:

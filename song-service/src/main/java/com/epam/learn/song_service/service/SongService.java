@@ -10,7 +10,6 @@ import com.epam.learn.song_service.service.mapper.SongMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,7 +24,6 @@ public class SongService {
     private final SongMapper songMapper;
     private final SongRepository songRepository;
 
-    @Transactional
     public SongMetadataResponse saveSongMetadata(SongMetadataRequest songMetadataRequest) {
         SongEntity songEntity = songMapper.toEntity(songMetadataRequest);
 

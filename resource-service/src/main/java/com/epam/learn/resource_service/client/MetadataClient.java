@@ -23,7 +23,7 @@ public class MetadataClient {
 
     public MetadataResponse postMetadata(MetadataRequest request) {
         ResponseEntity<MetadataResponse> response = restTemplate.postForEntity(
-                "http://song-service/songs",
+                "/songs",
                 request,
                 MetadataResponse.class
         );
@@ -39,7 +39,7 @@ public class MetadataClient {
     public Map<String, List<Long>> deleteMetadata(String commaSeparatedIds) {
         try {
             ResponseEntity<Map<String, List<Long>>> response = restTemplate.exchange(
-                    "http://song-service/songs?id={ids}",
+                    "/songs?id={ids}",
                     HttpMethod.DELETE,
                     null,
                     new ParameterizedTypeReference<>() {},
