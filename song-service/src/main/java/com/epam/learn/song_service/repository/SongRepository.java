@@ -12,5 +12,8 @@ import java.util.Optional;
 public interface SongRepository  extends JpaRepository<SongEntity, Long> {
     @Query("SELECT s.resourceId FROM SongEntity s WHERE s.resourceId IN :ids")
     List<Long> findExistingIds(@Param("ids") Collection<Long> ids);
+    
     Optional<SongEntity> findByResourceId(Long resourceId);
+
+    void deleteAllByResourceIdIn(List<Long> resourceIds);
 }
