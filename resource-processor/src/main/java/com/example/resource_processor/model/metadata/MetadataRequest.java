@@ -1,4 +1,4 @@
-package com.epam.learn.resource_service.model.metadata;
+package com.example.resource_processor.model.metadata;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Builder;

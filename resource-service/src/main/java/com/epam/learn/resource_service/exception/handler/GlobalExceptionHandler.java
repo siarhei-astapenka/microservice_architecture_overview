@@ -1,8 +1,6 @@
 package com.epam.learn.resource_service.exception.handler;
 
-import com.epam.learn.resource_service.exception.BadRequestException;
-import com.epam.learn.resource_service.exception.ConflictException;
-import com.epam.learn.resource_service.exception.NotFoundException;
+import com.epam.learn.resource_service.exception.*;
 import com.epam.learn.resource_service.model.resource.ErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -14,7 +12,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -107,6 +108,26 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
+                .errorMessage(ex.getMessage())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(StorageConnectionException.class)
+    public ResponseEntity<ErrorResponse> handleStorageConnectionException(StorageConnectionException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(String.valueOf(HttpStatus.SERVICE_UNAVAILABLE.value()))
+                .errorMessage("Storage service is temporarily unavailable")
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     @ExceptionHandler(Exception.class)

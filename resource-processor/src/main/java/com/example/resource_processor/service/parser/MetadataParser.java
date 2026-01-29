@@ -1,7 +1,7 @@
-package com.epam.learn.resource_service.service.parser;
+package com.example.resource_processor.service.parser;
 
-import com.epam.learn.resource_service.exception.BadRequestException;
-import com.epam.learn.resource_service.model.metadata.Metadata;
+import com.example.resource_processor.exception.BadRequestException;
+import com.example.resource_processor.model.metadata.Metadata;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.mp3.Mp3Parser;
 import org.apache.tika.sax.BodyContentHandler;

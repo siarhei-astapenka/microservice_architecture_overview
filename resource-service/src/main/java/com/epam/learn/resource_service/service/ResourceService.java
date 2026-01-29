@@ -7,6 +7,7 @@ import com.epam.learn.resource_service.service.storage.S3StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,8 +31,8 @@ public class ResourceService {
         this.s3Bucket = s3Bucket;
     }
 
+    @Transactional
     public Map<String, Long> uploadResource(byte[] file) {
-        // upload file bytes to S3 and save location in DB
         String key = s3StorageService.upload(file, null);
 
         ResourceEntity entity = ResourceEntity.builder()
@@ -58,6 +59,7 @@ public class ResourceService {
         return s3StorageService.download(entity.getStorageKey());
     }
 
+    @Transactional
     public Map<String, List<Long>> deleteResources(String ids) {
         Map<String, List<Long>> response = new HashMap<>();
 
@@ -70,12 +72,7 @@ public class ResourceService {
         for (Long id : existingIds) {
             resourceRepository.findById(id).ifPresent(entity -> {
                 if (entity.getStorageKey() != null && !entity.getStorageKey().isBlank()) {
-                    try {
-                        s3StorageService.delete(entity.getStorageKey());
-                    } catch (Exception e) {
-                        // log and continue - deletion best-effort
-                        // ...existing code...
-                    }
+                    s3StorageService.delete(entity.getStorageKey());
                 }
             });
         }
