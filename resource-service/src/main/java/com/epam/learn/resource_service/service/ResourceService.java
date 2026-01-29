@@ -18,17 +18,14 @@ import java.util.stream.Collectors;
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
-    private final MetadataService metadataService; // kept for delete/other flows
     private final S3StorageService s3StorageService;
     private final String s3Bucket;
 
     @Autowired
     public ResourceService(ResourceRepository resourceRepository,
-                           MetadataService metadataService,
                            S3StorageService s3StorageService,
                            @Value("${s3.bucket:resource-bucket}") String s3Bucket) {
         this.resourceRepository = resourceRepository;
-        this.metadataService = metadataService;
         this.s3StorageService = s3StorageService;
         this.s3Bucket = s3Bucket;
     }

@@ -57,6 +57,6 @@ public class S3StorageService {
     }
 
     private String generateKey() {
-        return "resources/" + UUID.randomUUID().toString() + ".mp3";
+        return "resources/" + UUID.randomUUID() + ".mp3";
     }
 }
