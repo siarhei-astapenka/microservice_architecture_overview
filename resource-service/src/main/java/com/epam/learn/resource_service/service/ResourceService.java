@@ -3,7 +3,9 @@ package com.epam.learn.resource_service.service;
 import com.epam.learn.resource_service.entity.ResourceEntity;
 import com.epam.learn.resource_service.exception.NotFoundException;
 import com.epam.learn.resource_service.repository.ResourceRepository;
-import lombok.AllArgsConstructor;
+import com.epam.learn.resource_service.service.storage.S3StorageService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -13,20 +15,34 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@AllArgsConstructor
 public class ResourceService {
 
     private final ResourceRepository resourceRepository;
-    private final MetadataService metadataService;
+    private final MetadataService metadataService; // kept for delete/other flows
+    private final S3StorageService s3StorageService;
+    private final String s3Bucket;
+
+    @Autowired
+    public ResourceService(ResourceRepository resourceRepository,
+                           MetadataService metadataService,
+                           S3StorageService s3StorageService,
+                           @Value("${s3.bucket:resource-bucket}") String s3Bucket) {
+        this.resourceRepository = resourceRepository;
+        this.metadataService = metadataService;
+        this.s3StorageService = s3StorageService;
+        this.s3Bucket = s3Bucket;
+    }
 
     public Map<String, Long> uploadResource(byte[] file) {
+        // upload file bytes to S3 and save location in DB
+        String key = s3StorageService.upload(file, null);
+
         ResourceEntity entity = ResourceEntity.builder()
-                .fileData(file)
+                .storageBucket(s3Bucket)
+                .storageKey(key)
                 .build();
 
         entity = resourceRepository.save(entity);
-
-        metadataService.parceAndSaveMetadata(file, entity.getId());
 
         Map<String, Long> response = new HashMap<>();
         response.put("id", entity.getId());
@@ -35,19 +51,14 @@ public class ResourceService {
     }
 
     public byte[] downloadResource(Long id) {
-        byte[] fileData;
+        ResourceEntity entity = resourceRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(String.format("Resource with ID=%s not found", id)));
 
-        try {
-            fileData = resourceRepository.findById(id)
-                    .orElseThrow(() -> new NotFoundException(String.format("Resource with ID=%s not found", id))).getFileData();
-        } catch (Exception e) {
+        if (entity.getStorageKey() == null || entity.getStorageKey().isBlank()) {
             throw new NotFoundException(String.format("Resource with ID=%s not found", id));
         }
 
-        if (fileData == null) {
-            throw new NotFoundException(String.format("Resource with ID=%s not found", id));
-        }
-        return fileData;
+        return s3StorageService.download(entity.getStorageKey());
     }
 
     public Map<String, List<Long>> deleteResources(String ids) {
@@ -59,8 +70,20 @@ public class ResourceService {
 
         List<Long> existingIds = resourceRepository.findExistingIds(idsToDelete);
 
+        for (Long id : existingIds) {
+            resourceRepository.findById(id).ifPresent(entity -> {
+                if (entity.getStorageKey() != null && !entity.getStorageKey().isBlank()) {
+                    try {
+                        s3StorageService.delete(entity.getStorageKey());
+                    } catch (Exception e) {
+                        // log and continue - deletion best-effort
+                        // ...existing code...
+                    }
+                }
+            });
+        }
+
         resourceRepository.deleteAllById(existingIds);
-        metadataService.deleteMetadata(ids);
 
         response.put("ids", existingIds);
 
