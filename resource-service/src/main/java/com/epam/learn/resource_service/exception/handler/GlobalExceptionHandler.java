@@ -12,10 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -121,7 +118,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(StorageConnectionException.class)
-    public ResponseEntity<ErrorResponse> handleStorageConnectionException(StorageConnectionException ex) {
+    public ResponseEntity<ErrorResponse> handleStorageConnectionException() {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.SERVICE_UNAVAILABLE.value()))
                 .errorMessage("Storage service is temporarily unavailable")
