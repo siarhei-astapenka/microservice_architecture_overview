@@ -5,16 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-
-import java.sql.Types;
 
 @Entity
 @Table(name = "resources")
@@ -28,8 +24,10 @@ public class ResourceEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
-    @JdbcTypeCode(Types.BINARY)
-    @Column(name = "file_data", nullable = false, columnDefinition = "bytea")
-    private byte[] fileData;
+    // new columns to store S3 location
+    @Column(name = "storage_bucket", nullable = false)
+    private String storageBucket;
+
+    @Column(name = "storage_key", nullable = false)
+    private String storageKey;
 }

@@ -42,6 +42,14 @@ song:
   service:
     url: http://song-service
 
+s3:
+  endpoint: ${S3_ENDPOINT:http://localhost:4566}
+  region: ${S3_REGION:us-east-1}
+  bucket: ${S3_BUCKET:resource-bucket}
+  access-key: ${S3_ACCESS_KEY:test}
+  secret-key: ${S3_SECRET_KEY:test}
+  path-style-access: ${S3_PATH_STYLE:true}
+
 logging:
   level:
     org:
@@ -49,4 +57,4 @@ logging:
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE 
+              BasicBinder: TRACE

@@ -1,4 +1,4 @@
-package com.epam.learn.resource_service.model.metadata;
+package com.example.resource_processor.model.metadata;
 
 import lombok.Builder;
 import lombok.Value;

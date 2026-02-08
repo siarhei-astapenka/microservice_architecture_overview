@@ -1,7 +1,7 @@
-package com.epam.learn.resource_service.service.mapper;
+package com.example.resource_processor.service.mapper;
 
-import com.epam.learn.resource_service.model.metadata.Metadata;
-import com.epam.learn.resource_service.model.metadata.MetadataRequest;
+import com.example.resource_processor.model.metadata.Metadata;
+import com.example.resource_processor.model.metadata.MetadataRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
