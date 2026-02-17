@@ -1,9 +1,14 @@
 package com.epam.learn.resource_service.exception.handler;
 
-import com.epam.learn.resource_service.exception.*;
+import com.epam.learn.resource_service.exception.BadRequestException;
+import com.epam.learn.resource_service.exception.ConflictException;
+import com.epam.learn.resource_service.exception.FileUploadException;
+import com.epam.learn.resource_service.exception.NotFoundException;
+import com.epam.learn.resource_service.exception.StorageConnectionException;
 import com.epam.learn.resource_service.model.resource.ErrorResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +21,11 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ErrorResponse> handleBadRequestException(BadRequestException ex) {
+        log.warn("BadRequestException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                 .errorMessage(ex.getMessage())
@@ -28,7 +35,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequestException(NotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex) {
+        log.warn("NotFoundException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.NOT_FOUND.value()))
                 .errorMessage(ex.getMessage())
@@ -38,7 +46,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ConflictException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequestException(ConflictException ex) {
+    public ResponseEntity<ErrorResponse> handleConflictException(ConflictException ex) {
+        log.warn("ConflictException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.CONFLICT.value()))
                 .errorMessage(ex.getMessage())
@@ -57,6 +66,8 @@ public class GlobalExceptionHandler {
                 .map(ConstraintViolation::getMessage)
                 .orElse("Validation failed");
 
+        log.warn("ConstraintViolationException: {}", errorMessage);
+
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                 .errorMessage(errorMessage)
@@ -68,6 +79,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         String errorMessage = String.format("Invalid value '%s' for ID. Must be a positive integer", ex.getValue());
+
+        log.warn("MethodArgumentTypeMismatchException: {}", errorMessage);
 
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
@@ -88,10 +101,14 @@ public class GlobalExceptionHandler {
                 .map(MediaType::toString)
                 .collect(Collectors.joining(", "));
 
+        String message = String.format("Unsupported media type: '%s'. Please use one of: %s",
+                receivedType, supportedTypes);
+
+        log.warn("HttpMediaTypeNotSupportedException: {}", message);
+
         ErrorResponse error = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
-                .errorMessage(String.format("Unsupported media type: '%s'. Please use one of: %s",
-                        receivedType, supportedTypes))
+                .errorMessage(message)
                 .build();
 
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -99,6 +116,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(HttpClientErrorException.class)
     public ResponseEntity<ErrorResponse> handleHttpClientErrorException(HttpClientErrorException ex) {
+        log.warn("HttpClientErrorException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                 .errorMessage(ex.getMessage())
@@ -109,6 +127,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FileUploadException.class)
     public ResponseEntity<ErrorResponse> handleFileUploadException(FileUploadException ex) {
+        log.error("FileUploadException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.BAD_REQUEST.value()))
                 .errorMessage(ex.getMessage())
@@ -118,7 +137,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(StorageConnectionException.class)
-    public ResponseEntity<ErrorResponse> handleStorageConnectionException() {
+    public ResponseEntity<ErrorResponse> handleStorageConnectionException(StorageConnectionException ex) {
+        log.error("StorageConnectionException: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.SERVICE_UNAVAILABLE.value()))
                 .errorMessage("Storage service is temporarily unavailable")
@@ -128,7 +148,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleExceptions() {
+    public ResponseEntity<ErrorResponse> handleExceptions(Exception ex) {
+        log.error("Unhandled exception: {}", ex.getMessage());
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .errorCode(String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value()))
                 .errorMessage(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())

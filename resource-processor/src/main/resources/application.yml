@@ -1,0 +1,107 @@
+spring:
+  application:
+    name: resource-processor
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2
+
+# RabbitMQ configuration
+rabbitmq:
+  queue:
+    resource:
+      upload:
+        queue: resource.upload.queue
+        dlq: resource.upload.dlq
+  exchange:
+    resource:
+      main: resource.exchange
+      dlx: resource.dlx
+  routing:
+    key:
+      resource:
+        upload: resource.upload.routing.key
+        dlq: resource.upload.routing.key
+
+# Service URLs
+resource:
+  service:
+    url: http://resource-service
+
+song:
+  service:
+    url: http://song-service
+
+# Eureka configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
+    appname: resource-processor
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.example.resource_processor: DEBUG
+    org.springframework.amqp: DEBUG
+
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
+
+# Resilience4j retry configuration
+resilience4j:
+  retry:
+    instances:
+      songServiceClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+          - org.springframework.web.client.HttpClientErrorException$Conflict
+          - org.springframework.web.client.HttpClientErrorException$UnprocessableEntity
+      resourceServiceClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+          - org.springframework.web.client.HttpClientErrorException$Conflict
+          - org.springframework.web.client.HttpClientErrorException$UnprocessableEntity

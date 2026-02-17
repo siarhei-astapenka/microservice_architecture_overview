@@ -21,6 +21,19 @@ spring:
     loadbalancer:
       ribbon:
         enabled: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: manual
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2
 
 server:
   port: 8080
@@ -37,11 +50,6 @@ eureka:
     prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
     appname: resource-service
 
-# Song service configuration for local development
-song:
-  service:
-    url: http://song-service
-
 s3:
   endpoint: ${S3_ENDPOINT:http://localhost:4566}
   region: ${S3_REGION:us-east-1}
@@ -50,11 +58,102 @@ s3:
   secret-key: ${S3_SECRET_KEY:test}
   path-style-access: ${S3_PATH_STYLE:true}
 
+# RabbitMQ configuration
+rabbitmq:
+  queue:
+    resource:
+      upload:
+        queue: resource.upload.queue
+        dlq: resource.upload.dlq
+  exchange:
+    resource:
+      main: resource.exchange
+      dlx: resource.dlx
+  routing:
+    key:
+      resource:
+        upload: resource.upload.routing.key
+        dlq: resource.upload.routing.key
+
+song:
+  metadata:
+    service:
+      url: ${SONG_METADATA_SERVICE_URL:http://localhost:8081}
+
 logging:
   level:
+    root: INFO
+    com:
+      epam:
+        learn:
+          resource_service: DEBUG
     org:
       hibernate:
         type:
           descriptor:
             sql:
               BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
+
+# Resilience4j retry configuration
+resilience4j:
+  retry:
+    instances:
+      songServiceClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+      s3Upload:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - software.amazon.awssdk.services.s3.model.S3Exception
+        ignoreExceptions:
+          - software.amazon.awssdk.services.s3.model.NoSuchBucketException
+          - java.nio.file.AccessDeniedException
+      s3Download:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - software.amazon.awssdk.services.s3.model.S3Exception
+        ignoreExceptions:
+          - software.amazon.awssdk.services.s3.model.NoSuchKeyException
+      s3Delete:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - software.amazon.awssdk.services.s3.model.S3Exception
+        ignoreExceptions:
+          - software.amazon.awssdk.services.s3.model.NoSuchKeyException
+      rabbitProducer:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.amqp.AmqpException
+      databaseRetry:
+        maxAttempts: 3
+        waitDuration: 100ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.dao.DataAccessException

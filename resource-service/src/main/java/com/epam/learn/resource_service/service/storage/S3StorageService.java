@@ -2,7 +2,11 @@ package com.epam.learn.resource_service.service.storage;
 
 import com.epam.learn.resource_service.exception.FileUploadException;
 import com.epam.learn.resource_service.exception.StorageConnectionException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -10,9 +14,11 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.UUID;
 
 @Service
+@Slf4j
 public class S3StorageService {
 
     private final S3Client s3Client;
@@ -23,86 +29,79 @@ public class S3StorageService {
         this.bucket = bucket;
     }
 
+    @Retryable(
+            retryFor = {S3Exception.class, SdkClientException.class},
+            noRetryFor = {NoSuchBucketException.class, AccessDeniedException.class, NoSuchKeyException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
+    )
     public String upload(byte[] data, String key) {
+        if (data == null || data.length == 0) {
+            throw new FileUploadException("File data must be provided");
+        }
+
         String objectKey = key != null ? key : generateKey();
+        log.info("Uploading to S3: bucket={}, key={}, size={}b", bucket, objectKey, data.length);
 
-        try {
-            PutObjectRequest putReq = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(objectKey)
-                    .contentType("audio/mpeg")
-                    .build();
+        PutObjectRequest putReq = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(objectKey)
+                .contentType("audio/mpeg")
+                .build();
 
-            s3Client.putObject(putReq, RequestBody.fromBytes(data));
-
-            return objectKey;
-        } catch (S3Exception e) {
-            handleS3Exception(e);
-            throw new FileUploadException("Failed to upload file to storage", e);
-        } catch (SdkClientException e) {
-            throw new StorageConnectionException("Unable to connect to storage service", e);
-        }
+        s3Client.putObject(putReq, RequestBody.fromBytes(data));
+        log.info("Uploaded to S3: key={}", objectKey);
+        return objectKey;
     }
 
+    @Retryable(
+            retryFor = {S3Exception.class, SdkClientException.class},
+            noRetryFor = {NoSuchKeyException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
+    )
     public byte[] download(String key) {
-        try {
-            GetObjectRequest getReq = GetObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .build();
+        GetObjectRequest getReq = GetObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
 
-            ResponseBytes<?> responseBytes = s3Client.getObjectAsBytes(getReq);
-
-            return responseBytes.asByteArray();
-        } catch (NoSuchKeyException e) {
-            throw new FileUploadException("File not found with key: " + key, e);
-        } catch (S3Exception e) {
-            handleS3Exception(e);
-            throw new FileUploadException("Failed to download file from storage", e);
-        } catch (SdkClientException e) {
-            throw new StorageConnectionException("Unable to connect to storage service", e);
-        }
+        ResponseBytes<?> responseBytes = s3Client.getObjectAsBytes(getReq);
+        return responseBytes.asByteArray();
     }
 
+    @Retryable(
+            retryFor = {S3Exception.class, SdkClientException.class},
+            noRetryFor = {NoSuchKeyException.class},
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
+    )
     public void delete(String key) {
-        try {
-            DeleteObjectRequest delReq = DeleteObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(key)
-                    .build();
+        DeleteObjectRequest delReq = DeleteObjectRequest.builder()
+                .bucket(bucket)
+                .key(key)
+                .build();
 
-            s3Client.deleteObject(delReq);
-        } catch (NoSuchKeyException e) {
-            // File already deleted or doesn't exist - это нормально для delete операции
-            throw new FileUploadException("File not found for deletion: " + key, e);
-        } catch (S3Exception e) {
-            handleS3Exception(e);
-            throw new FileUploadException("Failed to delete file from storage", e);
-        } catch (SdkClientException e) {
-            throw new StorageConnectionException("Unable to connect to storage service", e);
-        }
+        s3Client.deleteObject(delReq);
+        log.info("Deleted from S3: key={}", key);
     }
 
-    private void handleS3Exception(S3Exception e) {
-        String errorCode = e.awsErrorDetails().errorCode();
-        String errorMessage = e.awsErrorDetails().errorMessage();
+    @Recover
+    public String recoverUpload(Exception e, byte[] data, String key) {
+        log.error("Failed to upload to S3 after retries: {}", e.getMessage());
+        throw new StorageConnectionException("S3 upload failed", e);
+    }
 
-        switch (errorCode) {
-            case "NoSuchBucket":
-                throw new FileUploadException("Storage bucket does not exist: " + bucket, e);
-            case "AccessDenied":
-                throw new FileUploadException("Access denied to storage bucket", e);
-            case "InvalidAccessKeyId":
-            case "SignatureDoesNotMatch":
-                throw new FileUploadException("Invalid storage credentials", e);
-            case "RequestTimeout":
-                throw new StorageConnectionException("Storage request timeout", e);
-            default:
-                throw new FileUploadException(
-                        String.format("Storage error [%s]: %s", errorCode, errorMessage),
-                        e
-                );
-        }
+    @Recover
+    public byte[] recoverDownload(Exception e, String key) {
+        log.error("Failed to download from S3 after retries: {}", e.getMessage());
+        throw new StorageConnectionException("S3 download failed", e);
+    }
+
+    @Recover
+    public void recoverDelete(Exception e, String key) {
+        log.error("Failed to delete from S3 after retries: {}", e.getMessage());
+        throw new StorageConnectionException("S3 delete failed", e);
     }
 
     private String generateKey() {

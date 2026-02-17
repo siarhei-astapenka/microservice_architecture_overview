@@ -8,6 +8,7 @@ import com.epam.learn.song_service.model.SongMetadataResponse;
 import com.epam.learn.song_service.repository.SongRepository;
 import com.epam.learn.song_service.service.mapper.SongMapper;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class SongService {
 
     private final SongMapper songMapper;
@@ -30,21 +32,31 @@ public class SongService {
 
         songRepository.findByResourceId(songEntity.getResourceId())
                 .ifPresent(existing -> {
+                    log.warn("Metadata for resourceId={} already exists. Conflict detected.", songEntity.getResourceId());
                     throw new ConflictException(
                             String.format("Metadata for resource ID=%s already exists", songEntity.getResourceId()),
                             String.valueOf(HttpStatus.CONFLICT.value())
                     );
                 });
 
+        SongEntity savedEntity = songRepository.save(songEntity);
+        log.info("Saved song metadata with resourceId={} and metadata id={}", savedEntity.getResourceId(), savedEntity.getId());
+        
         return SongMetadataResponse.builder()
-                .id(songRepository.save(songEntity).getId())
+                .id(savedEntity.getId())
                 .build();
     }
 
     public SongMetadataResponse getSongMetadataByResourceId(Long resourceId) {
+        log.debug("Searching for song metadata with resourceId: {}", resourceId);
+        
         return songMapper.toResponse(
                 songRepository.findByResourceId(resourceId)
-                        .orElseThrow(() -> new NotFoundException(String.format("Resource with ID=%s not found", resourceId))));
+                        .orElseThrow(() -> {
+                            log.warn("Song metadata not found for resourceId: {}", resourceId);
+                            return new NotFoundException(String.format("Resource with ID=%s not found", resourceId));
+                        })
+        );
     }
 
     @Transactional
@@ -56,9 +68,16 @@ public class SongService {
                 .collect(Collectors.toList());
 
         List<Long> resourceIds = songRepository.findExistingIds(idsToDelete);
+        
+        if (resourceIds.isEmpty()) {
+            log.warn("No existing song metadata found for deletion among requested IDs: {}", idsToDelete);
+        } else {
+            log.info("Found {} existing song(s) to delete", resourceIds.size());
+        }
 
         songRepository.deleteAllByResourceIdIn(resourceIds);
 
+        log.info("Successfully deleted song metadata for resourceIds: {}", resourceIds);
         response.put("ids", resourceIds);
 
         return response;

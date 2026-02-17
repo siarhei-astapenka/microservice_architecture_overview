@@ -30,9 +30,16 @@ eureka:
 
 logging:
   level:
+    root: INFO
+    com:
+      epam:
+        learn:
+          song_service: DEBUG
     org:
       hibernate:
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE 
+              BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
