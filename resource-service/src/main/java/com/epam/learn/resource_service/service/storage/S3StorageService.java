@@ -32,7 +32,8 @@ public class S3StorageService {
     @Retryable(
             retryFor = {S3Exception.class, SdkClientException.class},
             noRetryFor = {NoSuchBucketException.class, AccessDeniedException.class, NoSuchKeyException.class},
-            backoff = @Backoff(delay = 1000, multiplier = 2)
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
     )
     public String upload(byte[] data, String key) {
         if (data == null || data.length == 0) {
@@ -56,7 +57,8 @@ public class S3StorageService {
     @Retryable(
             retryFor = {S3Exception.class, SdkClientException.class},
             noRetryFor = {NoSuchKeyException.class},
-            backoff = @Backoff(delay = 1000, multiplier = 2)
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
     )
     public byte[] download(String key) {
         GetObjectRequest getReq = GetObjectRequest.builder()
@@ -71,7 +73,8 @@ public class S3StorageService {
     @Retryable(
             retryFor = {S3Exception.class, SdkClientException.class},
             noRetryFor = {NoSuchKeyException.class},
-            backoff = @Backoff(delay = 1000, multiplier = 2)
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
     )
     public void delete(String key) {
         DeleteObjectRequest delReq = DeleteObjectRequest.builder()

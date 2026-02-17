@@ -26,7 +26,8 @@ public class ResourceUploadProducer {
 
     @Retryable(
             retryFor = {AmqpException.class},
-            backoff = @Backoff(delay = 1000, multiplier = 2)
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
     )
     public void sendResourceUploadMessage(ResourceUploadMessage message) {
         log.info("Sending message for resourceId: {}", message.getResourceId());
@@ -38,5 +39,6 @@ public class ResourceUploadProducer {
     public void recoverSendResourceUploadMessage(AmqpException e, ResourceUploadMessage message) {
         log.error("Failed to send message after retries for resourceId={}: {}",
                 message.getResourceId(), e.getMessage());
+        // Consider sending to DLQ or storing failed messages for later processing
     }
 }

@@ -23,8 +23,14 @@ public class SongServiceClient {
 
     @Retryable(
             retryFor = {RestClientException.class},
-            noRetryFor = {HttpClientErrorException.class},
-            backoff = @Backoff(delay = 1000, multiplier = 2)
+            noRetryFor = {
+                    HttpClientErrorException.NotFound.class,
+                    HttpClientErrorException.BadRequest.class,
+                    HttpClientErrorException.Conflict.class,
+                    HttpClientErrorException.UnprocessableEntity.class
+            },
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 1000, maxDelay = 10000, multiplier = 2)
     )
     public SongMetadataResponse saveSongMetadata(SongMetadataRequest request) {
         ResponseEntity<SongMetadataResponse> response = restTemplate.postForEntity(

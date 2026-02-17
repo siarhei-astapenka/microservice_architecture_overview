@@ -68,7 +68,8 @@ public class ResourceService {
 
     @Retryable(
             retryFor = {org.springframework.dao.DataAccessException.class},
-            backoff = @Backoff(delay = 100, multiplier = 2)
+            maxAttempts = 3,
+            backoff = @Backoff(delay = 100, maxDelay = 1000, multiplier = 2)
     )
     public ResourceEntity saveResourceEntity(String key) {
         ResourceEntity entity = ResourceEntity.builder()

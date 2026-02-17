@@ -72,3 +72,36 @@ logging:
 
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
+
+# Resilience4j retry configuration
+resilience4j:
+  retry:
+    instances:
+      songServiceClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+          - org.springframework.web.client.HttpClientErrorException$Conflict
+          - org.springframework.web.client.HttpClientErrorException$UnprocessableEntity
+      resourceServiceClient:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        retryExceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignoreExceptions:
+          - org.springframework.web.client.HttpClientErrorException$NotFound
+          - org.springframework.web.client.HttpClientErrorException$BadRequest
+          - org.springframework.web.client.HttpClientErrorException$Conflict
+          - org.springframework.web.client.HttpClientErrorException$UnprocessableEntity
