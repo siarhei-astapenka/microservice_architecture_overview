@@ -1,0 +1,37 @@
+resource:
+  service:
+    url: http://resource-service
+
+song:
+  service:
+    url: http://song-service
+
+eureka:
+  client:
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
+
+spring:
+  cloud:
+    discovery:
+      enabled: false
+    loadbalancer:
+      enabled: false
+  rabbitmq:
+    listener:
+      simple:
+        auto-startup: false
+      direct:
+        auto-startup: false
+    dynamic: false
+
+management:
+  health:
+    rabbit:
+      enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.epam.learn.resource_processor: INFO
