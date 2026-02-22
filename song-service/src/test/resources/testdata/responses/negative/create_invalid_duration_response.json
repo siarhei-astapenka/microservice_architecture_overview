@@ -1,0 +1,3 @@
+{
+  "errorMessage": "Duration must represent mm:ss format (00:00 to 59:59)"
+}
