@@ -76,9 +76,8 @@ rabbitmq:
         dlq: resource.upload.routing.key
 
 song:
-  metadata:
-    service:
-      url: ${SONG_METADATA_SERVICE_URL:http://localhost:8081}
+  service:
+    url: ${SONG_SERVICE_URL:http://localhost:8081}
 
 logging:
   level:

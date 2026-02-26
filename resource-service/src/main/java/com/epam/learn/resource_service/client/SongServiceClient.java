@@ -48,7 +48,7 @@ public class SongServiceClient {
     }
 
     @Recover
-    public Map<String, List<Long>> recoverDeleteMetadata(RestClientException e, String commaSeparatedIds) {
+    public Map<String, List<Long>> recoverDeleteMetadata(Exception e, String commaSeparatedIds) {
         log.error("Failed to delete metadata after retries for ids={}: {}", commaSeparatedIds, e.getMessage());
         return Map.of("ids", List.of());
     }

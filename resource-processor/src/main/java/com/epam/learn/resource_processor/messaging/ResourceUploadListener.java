@@ -36,10 +36,10 @@ public class ResourceUploadListener {
                     message.getResourceId(), e.getMessage());
 
             try {
-                // Reject message and requeue for retry
-                // If message fails multiple times, it will go to DLQ
-                channel.basicNack(deliveryTag, false, true);
-                log.info("Message rejected and requeued for resourceId: {}", message.getResourceId());
+                // Send to DLQ instead of requeue to prevent infinite loop
+                // Set requeue to false - message will go to dead letter queue
+                channel.basicNack(deliveryTag, false, false);
+                log.info("Message rejected and sent to DLQ for resourceId: {}", message.getResourceId());
             } catch (Exception ex) {
                 log.error("Error rejecting message for resourceId: {}. Error: {}",
                         message.getResourceId(), ex.getMessage());
