@@ -2,8 +2,8 @@ package com.epam.learn.resource_processor.client;
 
 import com.epam.learn.resource_processor.dto.SongMetadataRequest;
 import com.epam.learn.resource_processor.dto.SongMetadataResponse;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.*;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Recover;
@@ -16,10 +16,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class SongServiceClient {
 
     private final RestTemplate restTemplate;
+
+    public SongServiceClient(@Qualifier("songServiceRestTemplate") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     @Retryable(
             retryFor = {RestClientException.class},

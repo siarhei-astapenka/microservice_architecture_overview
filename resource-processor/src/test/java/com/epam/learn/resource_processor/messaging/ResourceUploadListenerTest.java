@@ -66,7 +66,7 @@ class ResourceUploadListenerTest {
     }
 
     @Test
-    @DisplayName("Should nack and requeue on processing error")
+    @DisplayName("Should nack and send to DLQ on processing error")
     void shouldNackAndRequeueOnError() throws Exception {
         // Given
         Long resourceId = 2L;
@@ -79,7 +79,7 @@ class ResourceUploadListenerTest {
         when(messageProperties.getDeliveryTag()).thenReturn(deliveryTag);
         doThrow(new RuntimeException("Processing failed"))
                 .when(resourceProcessorService).processResource(resourceId);
-        doNothing().when(channel).basicNack(deliveryTag, false, true);
+        doNothing().when(channel).basicNack(deliveryTag, false, false);
 
         // When
         resourceUploadListener.handleResourceUploadMessage(message, channel, amqpMessage);
@@ -87,11 +87,11 @@ class ResourceUploadListenerTest {
         // Then
         verify(resourceProcessorService).processResource(resourceId);
         verify(channel, never()).basicAck(anyLong(), anyBoolean());
-        verify(channel).basicNack(deliveryTag, false, true);
+        verify(channel).basicNack(deliveryTag, false, false);
     }
 
     @Test
-    @DisplayName("Should handle nack failure gracefully")
+    @DisplayName("Should handle nack failure gracefully - sends to DLQ")
     void shouldHandleNackFailure() throws Exception {
         // Given
         Long resourceId = 3L;
@@ -105,14 +105,14 @@ class ResourceUploadListenerTest {
         doThrow(new RuntimeException("Processing failed"))
                 .when(resourceProcessorService).processResource(resourceId);
         doThrow(new IOException("Nack failed"))
-                .when(channel).basicNack(deliveryTag, false, true);
+                .when(channel).basicNack(deliveryTag, false, false);
 
         // When
         resourceUploadListener.handleResourceUploadMessage(message, channel, amqpMessage);
 
         // Then - should not throw exception, just log error
         verify(resourceProcessorService).processResource(resourceId);
-        verify(channel).basicNack(deliveryTag, false, true);
+        verify(channel).basicNack(deliveryTag, false, false);
     }
 
     @Test
@@ -162,7 +162,7 @@ class ResourceUploadListenerTest {
     }
 
     @Test
-    @DisplayName("Should handle processing service throwing runtime exception")
+    @DisplayName("Should handle processing service throwing runtime exception - sends to DLQ")
     void shouldHandleRuntimeException() throws Exception {
         // Given
         Long resourceId = 6L;
@@ -175,13 +175,13 @@ class ResourceUploadListenerTest {
         when(messageProperties.getDeliveryTag()).thenReturn(deliveryTag);
         doThrow(new NullPointerException("Null pointer"))
                 .when(resourceProcessorService).processResource(resourceId);
-        doNothing().when(channel).basicNack(deliveryTag, false, true);
+        doNothing().when(channel).basicNack(deliveryTag, false, false);
 
         // When
         resourceUploadListener.handleResourceUploadMessage(message, channel, amqpMessage);
 
         // Then
-        verify(channel).basicNack(deliveryTag, false, true);
+        verify(channel).basicNack(deliveryTag, false, false);
         verify(channel, never()).basicAck(anyLong(), anyBoolean());
     }
 }

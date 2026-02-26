@@ -51,7 +51,7 @@ class ResourceUploadListenerIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should nack and requeue message when processing fails")
+    @DisplayName("Should nack without requeue when processing fails")
     void handle_shouldNackAndRequeueOnFailure() throws Exception {
         ResourceUploadMessage payload = ResourceUploadMessage.builder().resourceId(11L).build();
         Channel channel = mock(Channel.class);
@@ -64,7 +64,8 @@ class ResourceUploadListenerIntegrationTest {
 
         resourceUploadListener.handleResourceUploadMessage(payload, channel, amqpMessage);
 
-        verify(channel).basicNack(2L, false, true);
+        // Listener rejects to allow DLQ handling (no requeue).
+        verify(channel).basicNack(2L, false, false);
         verify(channel, never()).basicAck(anyLong(), anyBoolean());
     }
 }

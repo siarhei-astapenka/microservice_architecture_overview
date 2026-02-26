@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: resource-service
+              uri: lb://resource-service
+              predicates:
+                - Path=/resources/**
+            - id: song-service
+              uri: lb://song-service
+              predicates:
+                - Path=/songs/**
+
+server:
+  port: ${SERVER_PORT:8083}
+
+# Eureka configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
+    appname: api-gateway
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

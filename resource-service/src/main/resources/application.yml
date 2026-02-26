@@ -8,7 +8,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         jdbc:
@@ -76,9 +76,8 @@ rabbitmq:
         dlq: resource.upload.routing.key
 
 song:
-  metadata:
-    service:
-      url: ${SONG_METADATA_SERVICE_URL:http://localhost:8081}
+  service:
+    url: ${SONG_SERVICE_URL:http://song-service}
 
 logging:
   level:
@@ -89,10 +88,11 @@ logging:
           resource_service: DEBUG
     org:
       hibernate:
+        SQL: OFF
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE
+              BasicBinder: OFF
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
 

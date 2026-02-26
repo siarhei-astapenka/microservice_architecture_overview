@@ -1,9 +1,9 @@
 package com.epam.learn.resource_processor.contract;
 
-import com.epam.learn.resource_processor.client.ResourceServiceClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.stubrunner.spring.AutoConfigureStubRunner;
 import org.springframework.cloud.contract.stubrunner.spring.StubRunnerProperties;
@@ -11,7 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.client.RestTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Consumer-side contract test for resource-processor consuming resource-service HTTP API.
@@ -48,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ResourceServiceContractConsumerTest {
 
     @Autowired
+    @Qualifier("resourceServiceRestTemplate")
     private RestTemplate restTemplate;
 
     @Test
@@ -56,7 +56,7 @@ class ResourceServiceContractConsumerTest {
         // When - calling resource-service stub directly to verify the contract
         // The contract specifies: GET /resources/1 -> 200 OK with Content-Type: audio/mpeg
         org.springframework.http.ResponseEntity<byte[]> response = restTemplate.getForEntity(
-                "http://localhost:8080/resources/1",
+                "/resources/1",
                 byte[].class
         );
 

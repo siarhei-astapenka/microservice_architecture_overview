@@ -11,7 +11,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class MetadataRestTemplateConfig {
 
-    @Value("${song.service.url:http://localhost:8081}")
+    @Value("${song.service.url}")
     private String songServiceUrl;
 
     @Bean
