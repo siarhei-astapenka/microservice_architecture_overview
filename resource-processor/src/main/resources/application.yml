@@ -35,11 +35,11 @@ rabbitmq:
 # Service URLs
 resource:
   service:
-    url: http://resource-service
+    url: ${RESOURCE_SERVICE_URL:http://resource-service}
 
 song:
   service:
-    url: http://song-service
+    url: ${SONG_SERVICE_URL:http://song-service}
 
 # Eureka configuration
 eureka:
@@ -54,7 +54,7 @@ eureka:
     appname: resource-processor
 
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
 management:
   endpoints:

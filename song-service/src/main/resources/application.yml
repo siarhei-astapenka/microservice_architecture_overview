@@ -8,7 +8,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -37,9 +37,10 @@ logging:
           song_service: DEBUG
     org:
       hibernate:
+        SQL: OFF
         type:
           descriptor:
             sql:
-              BasicBinder: TRACE
+              BasicBinder: OFF
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
