@@ -1,4 +1,4 @@
-package com.epam.learn.resource_service.dto;
+package com.epam.learn.resource_service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -64,4 +64,17 @@ public class ResourceServiceClient {
                 org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
                 "Resource service unavailable after retries", e);
     }
+
+    /**
+     * Notify Resource Service that processing has completed.
+     * This triggers the move from STAGING to PERMANENT storage.
+     */
+    public void notifyProcessingComplete(Long resourceId) {
+        String url = String.format("/resources/%d/processed", resourceId);
+        log.info("Notifying resource service about processing completion: {}", url);
+
+        restTemplate.postForEntity(url, null, Void.class);
+
+        log.info("Successfully notified resource service for resourceId: {}", resourceId);
+    }
 }

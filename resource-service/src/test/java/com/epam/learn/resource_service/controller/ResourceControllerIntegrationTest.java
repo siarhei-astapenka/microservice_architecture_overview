@@ -2,7 +2,9 @@ package com.epam.learn.resource_service.controller;
 
 import com.epam.learn.resource_service.client.SongServiceClient;
 import com.epam.learn.resource_service.entity.ResourceEntity;
+import com.epam.learn.resource_service.enumeration.ResourceState;
 import com.epam.learn.resource_service.messaging.ResourceUploadProducer;
+import com.epam.learn.resource_service.model.ResourceUploadMessage;
 import com.epam.learn.resource_service.repository.ResourceRepository;
 import com.epam.learn.resource_service.service.storage.S3StorageService;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +83,7 @@ class ResourceControllerIntegrationTest {
             mp3 = is.readAllBytes();
         }
 
-        when(s3StorageService.upload(any(byte[].class), isNull())).thenReturn("resources/test.mp3");
+        when(s3StorageService.upload(any(byte[].class), anyString(), eq(ResourceState.STAGING))).thenReturn("resources/test.mp3");
 
         mockMvc.perform(post("/resources")
                         .contentType(MediaType.parseMediaType("audio/mpeg"))
@@ -91,11 +93,10 @@ class ResourceControllerIntegrationTest {
 
         List<ResourceEntity> all = resourceRepository.findAll();
         assertEquals(1, all.size());
-        assertEquals("resource-bucket-test", all.get(0).getStorageBucket());
         assertEquals("resources/test.mp3", all.get(0).getStorageKey());
 
-        ArgumentCaptor<com.epam.learn.resource_service.dto.ResourceUploadMessage> captor =
-                ArgumentCaptor.forClass(com.epam.learn.resource_service.dto.ResourceUploadMessage.class);
+        ArgumentCaptor<ResourceUploadMessage> captor =
+                ArgumentCaptor.forClass(ResourceUploadMessage.class);
         verify(resourceUploadProducer).sendResourceUploadMessage(captor.capture());
         assertEquals(all.get(0).getId(), captor.getValue().getResourceId());
         assertEquals("resource-bucket-test", captor.getValue().getStorageBucket());
@@ -119,12 +120,12 @@ class ResourceControllerIntegrationTest {
     @DisplayName("GET /resources/{id} should return bytes from storage")
     void download_shouldReturnBytes() throws Exception {
         ResourceEntity saved = resourceRepository.saveAndFlush(ResourceEntity.builder()
-                .storageBucket("resource-bucket-test")
                 .storageKey("k1")
+                .state(ResourceState.STAGING)
                 .build());
 
         byte[] data = new byte[]{1, 2, 3, 4};
-        when(s3StorageService.download("k1")).thenReturn(data);
+        when(s3StorageService.download(eq("k1"), any(ResourceState.class))).thenReturn(data);
 
         mockMvc.perform(get("/resources/{id}", saved.getId()))
                 .andExpect(status().isOk())
@@ -145,12 +146,12 @@ class ResourceControllerIntegrationTest {
     @DisplayName("DELETE /resources should delete existing and call song-service client")
     void delete_shouldDeleteExistingAndCallSongService() throws Exception {
         ResourceEntity r1 = resourceRepository.saveAndFlush(ResourceEntity.builder()
-                .storageBucket("resource-bucket-test")
                 .storageKey("k1")
+                .state(ResourceState.STAGING)
                 .build());
         ResourceEntity r2 = resourceRepository.saveAndFlush(ResourceEntity.builder()
-                .storageBucket("resource-bucket-test")
                 .storageKey("k2")
+                .state(ResourceState.STAGING)
                 .build());
 
         mockMvc.perform(delete("/resources")
@@ -159,8 +160,8 @@ class ResourceControllerIntegrationTest {
                 .andExpect(jsonPath("$.ids").isArray());
 
         assertTrue(resourceRepository.findAll().isEmpty());
-        verify(s3StorageService).delete("k1");
-        verify(s3StorageService).delete("k2");
+        verify(s3StorageService).delete(eq("k1"), any(ResourceState.class));
+        verify(s3StorageService).delete(eq("k2"), any(ResourceState.class));
         verify(songServiceClient).deleteMetadata(r1.getId() + ",9999," + r2.getId());
     }
 

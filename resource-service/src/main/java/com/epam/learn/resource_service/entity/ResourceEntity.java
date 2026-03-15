@@ -1,7 +1,10 @@
 package com.epam.learn.resource_service.entity;
 
+import com.epam.learn.resource_service.enumeration.ResourceState;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -24,10 +27,14 @@ public class ResourceEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // new columns to store S3 location
-    @Column(name = "storage_bucket", nullable = false)
-    private String storageBucket;
-
+    // Storage key - just the filename (e.g., UUID.mp3), no path
+    // Path is obtained from Storage Service based on state at runtime
     @Column(name = "storage_key", nullable = false)
     private String storageKey;
+
+    // Processing state: STAGING or PERMANENT
+    @Enumerated(EnumType.STRING)
+    @Column(name = "state", nullable = false)
+    @Builder.Default
+    private ResourceState state = ResourceState.STAGING;
 }

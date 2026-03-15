@@ -1,6 +1,6 @@
 package com.epam.learn.resource_service.messaging;
 
-import com.epam.learn.resource_service.dto.ResourceUploadMessage;
+import com.epam.learn.resource_service.model.ResourceUploadMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.AmqpException;

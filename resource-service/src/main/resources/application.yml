@@ -53,7 +53,6 @@ eureka:
 s3:
   endpoint: ${S3_ENDPOINT:http://localhost:4566}
   region: ${S3_REGION:us-east-1}
-  bucket: ${S3_BUCKET:resource-bucket}
   access-key: ${S3_ACCESS_KEY:test}
   secret-key: ${S3_SECRET_KEY:test}
   path-style-access: ${S3_PATH_STYLE:true}
@@ -65,6 +64,8 @@ rabbitmq:
       upload:
         queue: resource.upload.queue
         dlq: resource.upload.dlq
+      processed:
+        queue: resource.processed.queue
   exchange:
     resource:
       main: resource.exchange
@@ -74,10 +75,15 @@ rabbitmq:
       resource:
         upload: resource.upload.routing.key
         dlq: resource.upload.routing.key
+        processed: resource.processed.routing.key
 
 song:
   service:
     url: ${SONG_SERVICE_URL:http://song-service}
+
+storage:
+  service:
+    url: ${STORAGE_SERVICE_URL:http://storage-service}
 
 logging:
   level:
@@ -157,3 +163,15 @@ resilience4j:
         exponentialBackoffMultiplier: 2
         retryExceptions:
           - org.springframework.dao.DataAccessException
+  # Circuit Breaker configuration for Storage Service
+  circuitbreaker:
+    instances:
+      storageServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10

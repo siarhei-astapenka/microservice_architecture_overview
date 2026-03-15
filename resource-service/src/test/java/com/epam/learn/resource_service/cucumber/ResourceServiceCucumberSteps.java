@@ -213,7 +213,6 @@ public class ResourceServiceCucumberSteps {
     @Given("resource with ID {string} exists in the system")
     public void resourceWithIdExistsInTheSystem(String logicalId) {
         ResourceEntity entity = ResourceEntity.builder()
-                .storageBucket("test-bucket")
                 .storageKey("test-song.mp3")
                 .build();
         ResourceEntity saved = resourceRepository.save(entity);
@@ -226,7 +225,6 @@ public class ResourceServiceCucumberSteps {
         String[] idArray = logicalIds.split(",");
         for (String logicalId : idArray) {
             ResourceEntity entity = ResourceEntity.builder()
-                    .storageBucket("test-bucket")
                     .storageKey("test-song-" + logicalId.trim() + ".mp3")
                     .build();
             ResourceEntity saved = resourceRepository.save(entity);

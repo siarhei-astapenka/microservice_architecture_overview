@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS storages (
+    id BIGSERIAL PRIMARY KEY,
+    storage_type VARCHAR(255) NOT NULL UNIQUE,
+    storage_bucket VARCHAR(255) NOT NULL UNIQUE,
+    storage_path VARCHAR(255) NOT NULL
+);

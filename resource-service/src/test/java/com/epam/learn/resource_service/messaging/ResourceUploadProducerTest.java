@@ -1,6 +1,6 @@
 package com.epam.learn.resource_service.messaging;
 
-import com.epam.learn.resource_service.dto.ResourceUploadMessage;
+import com.epam.learn.resource_service.model.ResourceUploadMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
