@@ -54,7 +54,7 @@ public class ResourceController {
     public ResponseEntity<Map<String, List<Long>>> deleteResources(
             @RequestParam("id")
             @ValidCsvLength
-            @Pattern(regexp = "^\\d+(,\\d+)*$", message = "'id' must be comma-separated numbers or single number")
+            @Pattern(regexp = "^\\d++(,\\d++)*+$", message = "'id' must be comma-separated numbers or single number")
             String ids
     ) {
         log.info("HTTP DELETE /resources called for ids='{}'", ids);

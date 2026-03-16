@@ -63,7 +63,7 @@ public class SongServiceController {
     public ResponseEntity<Map<String, List<Long>>> deleteSongMetadata(
             @RequestParam("id")
             @ValidCsvLength
-            @Pattern(regexp = "^\\d+(,\\d+)*$", message = "Id must be comma-separated numbers or single number")
+            @Pattern(regexp = "^\\d++(,\\d++)*+$", message = "Id must be comma-separated numbers or single number")
             String ids
     ) {
         log.info("DELETE /songs?id={} - Deleting song metadata", ids);

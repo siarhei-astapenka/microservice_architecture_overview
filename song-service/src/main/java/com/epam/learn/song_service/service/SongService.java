@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -65,7 +64,7 @@ public class SongService {
 
         List<Long> idsToDelete = Arrays.stream(ids.split(","))
                 .map(Long::parseLong)
-                .collect(Collectors.toList());
+                .toList();
 
         List<Long> resourceIds = songRepository.findExistingIds(idsToDelete);
         

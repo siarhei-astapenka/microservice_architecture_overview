@@ -31,6 +31,13 @@ public class RabbitMQConfig {
     @Value("${rabbitmq.routing.key.resource.dlq:resource.upload.routing.key}")
     private String resourceDLQRoutingKey;
 
+    // Resource processed queue configuration
+    @Value("${rabbitmq.queue.resource.processed.queue:resource.processed.queue}")
+    private String resourceProcessedQueue;
+
+    @Value("${rabbitmq.routing.key.resource.processed:resource.processed.routing.key}")
+    private String resourceProcessedRoutingKey;
+
     @Bean
     public Queue resourceUploadQueue() {
         return QueueBuilder.durable(resourceUploadQueue)
@@ -42,6 +49,14 @@ public class RabbitMQConfig {
     @Bean
     public Queue resourceUploadDLQ() {
         return QueueBuilder.durable(resourceUploadDLQ).build();
+    }
+
+    @Bean
+    public Queue resourceProcessedQueue() {
+        return QueueBuilder.durable(resourceProcessedQueue)
+                .withArgument("x-dead-letter-exchange", resourceDLX)
+                .withArgument("x-dead-letter-routing-key", resourceDLQRoutingKey)
+                .build();
     }
 
     @Bean
@@ -59,6 +74,13 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(resourceUploadQueue())
                 .to(resourceExchange())
                 .with(resourceUploadRoutingKey);
+    }
+
+    @Bean
+    public Binding resourceProcessedBinding() {
+        return BindingBuilder.bind(resourceProcessedQueue())
+                .to(resourceExchange())
+                .with(resourceProcessedRoutingKey);
     }
 
     @Bean

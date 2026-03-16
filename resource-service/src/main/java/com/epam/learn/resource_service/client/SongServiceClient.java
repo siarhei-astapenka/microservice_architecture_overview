@@ -1,7 +1,7 @@
 package com.epam.learn.resource_service.client;
 
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.retry.annotation.Backoff;
@@ -17,10 +17,14 @@ import java.util.Map;
 
 @Component
 @Slf4j
-@AllArgsConstructor
 public class SongServiceClient {
 
     private final RestTemplate restTemplate;
+
+    public SongServiceClient(
+            @Qualifier("loadBalancedRestTemplate") RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
 
     @Retryable(
             retryFor = {RestClientException.class},

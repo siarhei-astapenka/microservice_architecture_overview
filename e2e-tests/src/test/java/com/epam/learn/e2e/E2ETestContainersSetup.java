@@ -40,11 +40,11 @@ public final class E2ETestContainersSetup {
         try (InputStream input = E2ETestContainersSetup.class.getClassLoader()
                 .getResourceAsStream("e2e-config.properties")) {
             if (input == null) {
-                throw new RuntimeException("Unable to find e2e-config.properties");
+                throw new IllegalStateException("Unable to find e2e-config.properties");
             }
             properties.load(input);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load e2e-config.properties", e);
+            throw new IllegalStateException("Failed to load e2e-config.properties", e);
         }
     }
 

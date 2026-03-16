@@ -50,6 +50,24 @@ services:
       timeout: 5s
       retries: 5
 
+  storage-db:
+    image: postgres:17-alpine
+    env_file: .env
+    environment:
+      POSTGRES_DB: ${STORAGE_DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5434:5432"
+    volumes:
+      - ./init-scripts/storage-db:/docker-entrypoint-initdb.d
+      - storage-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${STORAGE_DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
     image: localstack/localstack
@@ -65,7 +83,6 @@ services:
       - AWS_SECRET_ACCESS_KEY=${S3_SECRET_KEY}
     volumes:
       # Mount the actual init script from init-scripts (make it executable on the host).
-      - "./init-scripts/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh:ro"
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     healthcheck:
@@ -91,6 +108,40 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  storage-service:
+    build: ./storage-service
+    env_file: .env
+    environment:
+      SERVER_PORT: 8080
+      SPRING_DATASOURCE_URL: jdbc:postgresql://storage-db:5432/${STORAGE_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: storage-service
+      EUREKA_INSTANCE_PREFERIPADDRESS: true
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+      S3_PATH_STYLE: ${S3_PATH_STYLE}
+    ports:
+      - "8084:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      storage-db:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
 
   resource-service:
     build: ./resource-service
@@ -130,6 +181,8 @@ services:
       localstack:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      storage-service:
         condition: service_healthy
 
   song-service:
@@ -217,4 +270,5 @@ services:
 volumes:
   resource-db-data:
   song-db-data:
+  storage-db-data:
   localstack-data:

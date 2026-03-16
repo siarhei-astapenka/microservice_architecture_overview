@@ -9,10 +9,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
-public class MetadataRestTemplateConfig {
+public class RestTemplateConfig {
 
     @Value("${song.service.url}")
     private String songServiceUrl;
+
+    @Value("${storage.service.url}")
+    private String storageServiceUrl;
 
     @Bean
     @LoadBalanced
@@ -20,6 +23,16 @@ public class MetadataRestTemplateConfig {
     public RestTemplate loadBalancedRestTemplate(RestTemplateBuilder builder) {
         return builder
                 .rootUri(songServiceUrl)
+                .defaultHeader("Content-Type", "application/json")
+                .build();
+    }
+
+    @Bean
+    @LoadBalanced
+    @ConditionalOnProperty(name = "eureka.client.enabled", havingValue = "true", matchIfMissing = true)
+    public RestTemplate storageServiceRestTemplate(RestTemplateBuilder builder) {
+        return builder
+                .rootUri(storageServiceUrl)
                 .defaultHeader("Content-Type", "application/json")
                 .build();
     }

@@ -1,6 +1,6 @@
 package com.epam.learn.resource_service.contract;
 
-import com.epam.learn.resource_service.dto.ResourceUploadMessage;
+import com.epam.learn.resource_service.model.ResourceUploadMessage;
 import com.epam.learn.resource_service.messaging.ResourceUploadProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.amqp.core.AmqpTemplate;
