@@ -21,11 +21,12 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
 
-# Disable all metrics to avoid container issues
+# Management and Prometheus configuration
 management:
-  metrics:
-    export:
-      prometheus:
-        enabled: false
-    enable:
-      all: false 
+  endpoints.web.exposure.include: health,info,metrics,prometheus
+  endpoint.health.show-details: always
+  metrics.tags.application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true 

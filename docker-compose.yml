@@ -3,6 +3,8 @@ services:
     build: ./eureka-server
     ports:
       - "8761:8761"
+    networks:
+      - microservices-network
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - EUREKA_INSTANCE_HOSTNAME=eureka-server
@@ -17,6 +19,8 @@ services:
   resource-db:
     image: postgres:17-alpine
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       POSTGRES_DB: ${RESOURCE_DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -35,6 +39,8 @@ services:
   song-db:
     image: postgres:17-alpine
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       POSTGRES_DB: ${SONG_DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -53,6 +59,8 @@ services:
   storage-db:
     image: postgres:17-alpine
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       POSTGRES_DB: ${STORAGE_DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -71,6 +79,8 @@ services:
   localstack:
     container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
     image: localstack/localstack
+    networks:
+      - microservices-network
     ports:
       - "127.0.0.1:4566:4566"            # LocalStack Gateway
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
@@ -95,6 +105,8 @@ services:
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
+    networks:
+      - microservices-network
     ports:
       - "5672:5672"    # AMQP port
       - "15672:15672"  # Management UI
@@ -112,6 +124,8 @@ services:
   storage-service:
     build: ./storage-service
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       SERVER_PORT: 8080
       SPRING_DATASOURCE_URL: jdbc:postgresql://storage-db:5432/${STORAGE_DB_NAME}
@@ -146,6 +160,8 @@ services:
   resource-service:
     build: ./resource-service
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://resource-db:5432/${RESOURCE_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
@@ -188,6 +204,8 @@ services:
   song-service:
     build: ./song-service
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://song-db:5432/${SONG_DB_NAME}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
@@ -214,6 +232,8 @@ services:
   resource-processor:
     build: ./resource-processor
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       SERVER_PORT: 8080
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -246,6 +266,8 @@ services:
   api-gateway:
     build: ./api-gateway
     env_file: .env
+    networks:
+      - microservices-network
     environment:
       SERVER_PORT: 8080
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
@@ -267,8 +289,89 @@ services:
       song-service:
         condition: service_started
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_USER=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    networks:
+      - microservices-network
+    depends_on:
+      - prometheus
+      - loki
+
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - microservices-network
+
+  # Loki for log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    ports:
+      - "3100:3100"
+    networks:
+      - microservices-network
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+
+  # Promtail for log collection
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    ports:
+      - "9080:9080"
+    networks:
+      - microservices-network
+    volumes:
+      - ./promtail/promtail.yml:/etc/promtail/promtail.yml:ro
+      - /var/log:/var/log
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - loki
+
 volumes:
   resource-db-data:
   song-db-data:
   storage-db-data:
   localstack-data:
+  prometheus-data:
+  grafana-data:
+  loki-data:
+
+networks:
+  microservices-network:
+    driver: bridge
