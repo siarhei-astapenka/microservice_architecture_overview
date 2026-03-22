@@ -34,9 +34,30 @@ spring:
           max-attempts: 3
           initial-interval: 1000
           multiplier: 2
+        observation-enabled: true
+    template:
+      observation-enabled: true
 
 server:
   port: 8080
+
+# Management and Prometheus configuration
+management:
+  endpoints.web.exposure.include: health,info,metrics,prometheus
+  endpoint.health.show-details: always
+  metrics.tags.application: ${spring.application.name}
+  tracing:
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 # Eureka configuration
 eureka:
@@ -100,7 +121,7 @@ logging:
             sql:
               BasicBinder: OFF
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - [%X{traceId:-}] - %msg%n"
 
 # Resilience4j retry configuration
 resilience4j:
