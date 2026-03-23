@@ -1,10 +1,7 @@
 package com.epam.learn.api_gateway.error;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.cloud.gateway.support.NotFoundException;
-import org.springframework.cloud.gateway.route.Route;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -16,10 +13,7 @@ import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.nio.charset.StandardCharsets;
 
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -39,55 +33,43 @@ public class GatewayErrorHandler implements ErrorWebExceptionHandler {
         }
 
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
-        String message = "Unexpected error";
+        String errorMessage = "Unexpected error";
 
-        if (ex instanceof NotFoundException) {
+        if (ex instanceof UnauthorizedException) {
+            status = HttpStatus.UNAUTHORIZED;
+            errorMessage = ex.getMessage();
+        } else if (ex instanceof ForbiddenException) {
+            status = HttpStatus.FORBIDDEN;
+            errorMessage = ex.getMessage();
+        } else if (ex instanceof NotFoundException) {
             status = HttpStatus.SERVICE_UNAVAILABLE;
-            message = "Service unavailable";
+            errorMessage = "Service unavailable";
         } else if (ex instanceof ResponseStatusException rse) {
             status = HttpStatus.valueOf(rse.getStatusCode().value());
-            message = rse.getReason() != null ? rse.getReason() : status.getReasonPhrase();
+            errorMessage = rse.getReason() != null ? rse.getReason() : status.getReasonPhrase();
         }
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", Instant.now().toString());
-        body.put("status", status.value());
-        body.put("error", status.getReasonPhrase());
-        body.put("message", message);
-        body.put("path", exchange.getRequest().getURI().getPath());
-        if (status == HttpStatus.SERVICE_UNAVAILABLE) {
-            resolveServiceName(exchange)
-                    .ifPresent(service -> body.put("service", service));
-        }
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .errorCode(String.valueOf(status.value()))
+                .errorMessage(errorMessage)
+                .path(exchange.getRequest().getURI().getPath())
+                .build();
 
-        byte[] bytes;
-        try {
-            bytes = objectMapper.writeValueAsBytes(body);
-        } catch (JsonProcessingException e) {
-            bytes = ("{\"status\":" + status.value() + ",\"error\":\"" + status.getReasonPhrase() + "\"}").getBytes();
-        }
+        String json = toJson(errorResponse);
 
         response.setStatusCode(status);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+        return response.writeWith(Mono.just(
+                response.bufferFactory().wrap(json.getBytes(StandardCharsets.UTF_8))));
     }
 
-    private Optional<String> resolveServiceName(ServerWebExchange exchange) {
-        Route route = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
-        if (route == null) {
-            return Optional.empty();
+    private String toJson(ErrorResponse errorResponse) {
+        try {
+            return objectMapper.writeValueAsString(errorResponse);
+        } catch (Exception e) {
+            return "{\"errorCode\":\"" + errorResponse.getErrorCode() + 
+                   "\",\"errorMessage\":\"" + errorResponse.getErrorMessage() + 
+                   "\",\"path\":\"" + errorResponse.getPath() + "\"}";
         }
-
-        String scheme = route.getUri().getScheme();
-        String host = route.getUri().getHost();
-        if (host == null) {
-            return Optional.empty();
-        }
-
-        if ("lb".equalsIgnoreCase(scheme)) {
-            return Optional.of(host);
-        }
-
-        return Optional.of(host);
     }
 }

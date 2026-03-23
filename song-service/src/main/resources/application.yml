@@ -46,6 +46,10 @@ eureka:
     prefer-ip-address: ${EUREKA_INSTANCE_PREFERIPADDRESS:true}
     appname: song-service
 
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-key-that-is-at-least-256-bits-long-for-hs256-algorithm}
+
 logging:
   level:
     root: INFO

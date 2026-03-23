@@ -121,6 +121,30 @@ services:
       retries: 5
       start_period: 20s
 
+  authorization-server:
+    build: ./authorization-server
+    env_file: .env
+    networks:
+      - microservices-network
+    environment:
+      SERVER_PORT: 9000
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_HOSTNAME: authorization-server
+      EUREKA_INSTANCE_PREFERIPADDRESS: true
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION}
+    ports:
+      - "9000:9000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9000/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
   storage-service:
     build: ./storage-service
     env_file: .env
@@ -141,6 +165,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       S3_PATH_STYLE: ${S3_PATH_STYLE}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8084:8080"
     healthcheck:
@@ -181,6 +206,7 @@ services:
       RABBITMQ_PORT: 5672
       RABBITMQ_USERNAME: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_DEFAULT_PASS}
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8080:8080"
     healthcheck:
@@ -200,6 +226,8 @@ services:
         condition: service_healthy
       storage-service:
         condition: service_healthy
+      authorization-server:
+        condition: service_healthy
 
   song-service:
     build: ./song-service
@@ -215,6 +243,7 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: song-service
       EUREKA_INSTANCE_PREFERIPADDRESS: true
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8081:8080"
     healthcheck:
@@ -273,6 +302,8 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_HOSTNAME: api-gateway
       EUREKA_INSTANCE_PREFERIPADDRESS: true
+      JWT_SECRET: ${JWT_SECRET}
+      AUTHORIZATION_SERVER_URL: http://authorization-server:9000
     ports:
       - "8083:8080"
     healthcheck:
@@ -283,6 +314,8 @@ services:
       start_period: 40s
     depends_on:
       eureka-server:
+        condition: service_healthy
+      authorization-server:
         condition: service_healthy
       resource-service:
         condition: service_started

@@ -44,6 +44,11 @@ song:
   service:
     url: ${SONG_SERVICE_URL:http://song-service}
 
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-key-that-is-at-least-256-bits-long-for-hs256-algorithm}
+  service-token-expiration-ms: ${JWT_SERVICE_TOKEN_EXPIRATION_MS:86400000}
+  service-token-subject: ${JWT_SERVICE_TOKEN_SUBJECT:resource-processor}
+
 # Eureka configuration
 eureka:
   client:

@@ -6,10 +6,18 @@ spring:
       server:
         webflux:
           routes:
+            - id: authorization-server
+              uri: lb://authorization-server
+              predicates:
+                - Path=/auth/**
             - id: resource-service
               uri: lb://resource-service
               predicates:
                 - Path=/resources/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 100MB
             - id: song-service
               uri: lb://song-service
               predicates:
@@ -17,6 +25,17 @@ spring:
 
 server:
   port: ${SERVER_PORT:8083}
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-key-that-is-at-least-256-bits-long-for-hs256-algorithm}
+  service-token-expiration-ms: ${JWT_SERVICE_TOKEN_EXPIRATION_MS:86400000}
+  service-token-subject: ${JWT_SERVICE_TOKEN_SUBJECT:api-gateway}
+
+# Authorization Server URL for token validation
+authorization:
+  server:
+    url: ${AUTHORIZATION_SERVER_URL:http://localhost:9000}
 
 # Eureka configuration
 eureka:
@@ -55,5 +74,9 @@ management:
         enabled: true
 
 logging:
+  level:
+    root: INFO
+    com.epam.learn: DEBUG
+    org.springframework.security: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %logger{36} - %highlight(%-5level) - [%X{traceId:-}] - %msg%n"
