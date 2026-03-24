@@ -4,6 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 out/
+volume/
+*.log
+*.pid
 
 ### STS ###
 .apt_generated
